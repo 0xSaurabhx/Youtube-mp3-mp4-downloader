@@ -18,7 +18,7 @@ if password == os.environ['PASSWORD']:
         if os.path.exists("./MP4"):
             shutil.rmtree("./MP4")
         st.success("Files deleted successfully!")
-else:
+elif password != os.environ['PASSWORD']:
     st.sidebar.write("Wrong Password")
 
 def main():
