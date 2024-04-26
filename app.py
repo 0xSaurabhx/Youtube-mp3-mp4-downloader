@@ -11,15 +11,15 @@ st.set_page_config(page_icon="⬇️", page_title="Youtube MP3 & MP4 Downloader"
 
 st.sidebar.title("OWNER ONLY")
 password = st.sidebar.text_input("Enter Password", type='password')
-if password == os.environ['PASSWORD']:
-    if st.sidebar.button("Delete Files"):
+if st.sidebar.button("Delete Files"):
+    if password == os.environ['PASSWORD']:
         if os.path.exists("./MP3"):
             shutil.rmtree("./MP3")
         if os.path.exists("./MP4"):
             shutil.rmtree("./MP4")
         st.success("Files deleted successfully!")
-elif password != os.environ['PASSWORD']:
-    st.sidebar.write("Wrong Password")
+    else:
+        st.sidebar.write("Wrong Password")
 
 def main():
     st.title("YouTube Video Downloader")
