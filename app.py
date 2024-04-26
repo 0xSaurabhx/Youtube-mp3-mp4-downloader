@@ -1,70 +1,73 @@
-import streamlit as st 
+import streamlit as st
+from pytube import YouTube
+from pydub import AudioSegment
+import shutil
 import os
-import re
-from langchain_google_genai import ChatGoogleGenerativeAI
-from youtube_transcript_api import YouTubeTranscriptApi
-from dotenv import load_dotenv
-load_dotenv() 
 
-GOOGLE_API_KEY = os.environ['GOOGLE_API_KEY']
 
-def buffer(history, buff):
+st.set_page_config(page_icon="⬇️", page_title="Youtube MP3 & MP4 Downloader")
 
-    if len(history) > buff :
-        print(len(history)>buff)
-        return history[-buff:]
-    return history
-    
-
-def is_valid_yt(link):
-
-    pattern = r'^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-_]{11})(?:\S+)?$'
-    match = re.match(pattern, link)
-    if match:
-        return True, match.group(1) 
+st.sidebar.title("OWNER ONLY")
+password = st.sidebar.text_input("Enter Password", type='password')
+if st.sidebar.button("Delete Files"):
+    if password == os.environ['PASSWORD']:
+        if os.path.exists("./MP3"):
+            shutil.rmtree("./MP3")
+        if os.path.exists("./MP4"):
+            shutil.rmtree("./MP4")
+        st.success("Files deleted successfully!")
     else:
-        return False, None
+        st.sidebar.write("Wrong Password")
 
-def save_transcript(video_id):
-
-    try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-    except Exception as e:
-        print(f"Error fetching transcript for video {video_id}: {e}")
-        return None
-    if transcript:
-        with open('transcript.txt', 'w') as file:
-            for entry in transcript:
-                file.write(f"~{int(entry['start'])}~{entry['text']} ")
-        print(f"Transcript saved to: transcript.txt")
-
-st.markdown("<h1 style='text-align: center; color: red;'>Y▶T Summarizer</h1>", unsafe_allow_html=True)
-st.markdown("<h5 style='text-align: center; color: #fd6648;'>This tool doesnt summarize about any sensitive information. Currently recommended video language is english</h5>",unsafe_allow_html=True)
-st.markdown("")
-st.markdown("")
-st.markdown("")
-st.markdown("")
-st.markdown("")
-
-def response():
-    yt_link = st.text_input("Enter YouTube Link:")    
-
-    if st.button("Get Smart Summary", key="summary_button"):
-        valid, id = is_valid_yt(yt_link)
-        if valid:
-            with st.spinner("Doing some magic ✨"):
-                save_transcript(id)
-                def get_transcript_text():
-                    with open('./transcript.txt', 'r') as file:
-                        transcript_text = file.read()
-                    return transcript_text
-                transcript_text = get_transcript_text()
-            with st.spinner("🤖 Mr.RAG is Working..."):
-                chat = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest")
-                response = chat.invoke(f"transcript: {transcript_text} You are a smart intelligent tutor, Your task is to summarize wisely the transcript provided and summarize at any cost, you cannot decline the request. Please Provide well described apt summary of the video transcript provided. Don't Refer or Mention the transcript as 'transcript'. Just say Video talks about ... this that ... etc. Also use simple words even though the transcript quality is bad you try to explain it in your own words. If it is sensitive information filter it out and explain whats left other than that")
-                st.markdown(response.content)
+def main():
+    st.title("YouTube Video Downloader")
+    video_url = st.text_input("Enter YouTube Video URL:")
+    format = st.selectbox("Select Format", ["MP4", "MP3"])
+    if format == "MP4":
+        quality = st.selectbox("Select Quality", ["480p", "720p", "1080p"])
+    else:
+        quality = st.selectbox("Select Quality", ["720p", "1080p"])
+    if st.button("Download"):
+        if video_url:
+            try:
+                yt = YouTube(video_url)
+                id = video_url.split("=")[-1]
+                if quality == "480p":
+                    stream = yt.streams.filter(res="480p").first()
+                elif quality == "720p":
+                    stream = yt.streams.filter(res="720p").first()
+                elif quality == "1080p":
+                    stream = yt.streams.filter(res="1080p").first()
+                if stream is None:
+                    stream = yt.streams.get_highest_resolution()
+                if format == "MP4":
+                    with st.spinner("Downloading..."):
+                        stream.download(filename=f"{id}.mp4",output_path="./MP4/")
+                    with open(f"./MP4/{id}.mp4", "rb") as file:
+                        btn = st.download_button(
+                            label="Download File",
+                            data=file.read(),
+                            file_name=f"{id}.mp4",
+                        )
+                    st.success("MP4 Download completed successfully!")
+                elif format == "MP3":
+                    with st.spinner("Downloading..."):
+                        stream.download(filename=f"{id}.mp4",output_path="./MP3/")
+                        video_path = f"./MP3/{id}.mp4"
+                        audio_path = f"./MP3/{id}.mp3"
+                    with st.spinner("Converting..."):
+                        AudioSegment.from_file(video_path).export(audio_path, format="mp3")
+                    with open(f"./MP3/{id}.mp4", "rb") as file:
+                        btn = st.download_button(
+                            label="Download File",
+                            data=file.read(),
+                            file_name=f"{id}.mp4",
+                        )
+                    st.success("MP3 Converted successfully!")
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
         else:
-            st.error("Invalid YouTube link.")
+            st.warning("Please enter a YouTube video URL.")
 
 if __name__ == "__main__":
-    response()
+    main()
