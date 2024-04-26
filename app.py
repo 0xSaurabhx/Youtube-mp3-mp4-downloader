@@ -2,7 +2,6 @@ import streamlit as st
 from pytube import YouTube
 from pydub import AudioSegment
 import shutil
-import ffprobe
 import os
 
 BOT_TOKEN = '6556103654:AAGDzRHqFPY7RCrAirbbNXNTO96EJI3yPic'
