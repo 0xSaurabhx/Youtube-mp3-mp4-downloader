@@ -9,8 +9,9 @@ CHANNEL_ID = '-1002144289063'
 
 st.set_page_config(page_icon="⬇️", page_title="Youtube MP3 & MP4 Downloader")
 
+st.sidebar.title("OWNER ONLY")
 password = st.sidebar.text_input("Enter Password", type='password')
-if password == "123":
+if password == os.environ['PASSWORD']:
     if st.sidebar.button("Delete Files"):
         if os.path.exists("./MP3"):
             shutil.rmtree("./MP3")
